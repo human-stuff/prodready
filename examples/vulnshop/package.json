@@ -1,0 +1,17 @@
+{
+  "name": "vulnshop",
+  "version": "0.0.1",
+  "private": true,
+  "description": "A deliberately insecure demo shop for trying prodready. Never deploy it.",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "express": "*",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.13.0",
+    "axios": "^1.7.0",
+    "request": "^2.88.2"
+  }
+}

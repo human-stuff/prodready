@@ -1,0 +1,30 @@
+name: New check
+description: Something that breaks in production and prodready doesn't look for.
+labels: [new-check]
+body:
+  - type: input
+    id: area
+    attributes:
+      label: Area
+      placeholder: reliability
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What goes wrong in production, and how you've seen it happen.
+    validations:
+      required: true
+  - type: textarea
+    id: detect
+    attributes:
+      label: How to detect it in code
+      description: Function names, config keys, file patterns, for one or more stacks.
+    validations:
+      required: true
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Suggested severity
+      options: [critical, high, medium, low]

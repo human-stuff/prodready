@@ -1,0 +1,27 @@
+name: Bug
+description: A script failed, a mode did the wrong thing, or the report is malformed.
+labels: [bug]
+body:
+  - type: input
+    id: mode
+    attributes:
+      label: Mode
+      placeholder: audit / fix / export / deploy
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what you expected
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Output or error
+      render: text
+  - type: input
+    id: env
+    attributes:
+      label: Agent, OS and prodready version
+      placeholder: Claude Code 2.x, Ubuntu 24.04, prodready 1.0.0

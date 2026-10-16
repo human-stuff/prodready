@@ -1,0 +1,127 @@
+name: validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+
+      - name: Repository checks
+        run: python3 scripts/validate.py
+
+      - name: Shell scripts
+        run: |
+          shellcheck --severity=warning skills/prodready/scripts/*.sh
+          bash -n skills/prodready/scripts/*.sh
+
+      - name: Python scripts compile
+        run: python3 -m py_compile skills/prodready/scripts/*.py scripts/validate.py
+
+      - name: Readiness scripts on vulnshop
+        working-directory: examples/vulnshop
+        run: |
+          S=../../skills/prodready/scripts
+          bash $S/detect-stack.sh | tee /tmp/stack.txt
+          grep -q "Express" /tmp/stack.txt
+          grep -q "no lockfile" /tmp/stack.txt
+          bash $S/run-scanners.sh
+          python3 $S/dep-age.py --out /tmp/dep-age.json
+          python3 -c "import json; d=json.load(open('/tmp/dep-age.json')); assert d['counts']['total'] == 5, d['counts']"
+          python3 $S/env-scan.py --out /tmp/env.json
+          python3 - <<'PY'
+          import json
+          d = json.load(open("/tmp/env.json"))
+          names = {v["name"]: v for v in d["variables"]}
+          assert set(names) == {"DATABASE_URL", "JWT_SECRET"}, names.keys()
+          assert "fallback" in names["JWT_SECRET"]["gap"], names["JWT_SECRET"]
+          assert "PostgreSQL" in d["services"], d["services"]
+          print("env-scan ok")
+          PY
+
+      - name: Migration linter on vulnshop
+        working-directory: examples/vulnshop
+        run: |
+          python3 ../../skills/prodready/scripts/migrate-lint.py --all --out /tmp/mig.json --md
+          python3 -c "import json; d=json.load(open('/tmp/mig.json')); r=sorted(f['rule'] for f in d['findings']); assert r==['M02','M04'], r"
+
+      - name: Live check against a local server with planted exposures
+        run: |
+          mkdir -p /tmp/www/.git && cd /tmp/www
+          echo "<html>ok</html>" > index.html
+          printf 'SECRET=x\n' > .env
+          printf 'ref: refs/heads/main\n' > .git/HEAD
+          python3 -m http.server 18099 --bind 127.0.0.1 >/dev/null 2>&1 &
+          sleep 1
+          python3 "$GITHUB_WORKSPACE/skills/prodready/scripts/live-check.py" http://127.0.0.1:18099 --out /tmp/live.json --md
+          python3 -c "import json; d=json.load(open('/tmp/live.json')); c=[x for x in d['checks'] if x['check']=='No sensitive files exposed'][0]; assert c['status']=='fail' and '/.env' in c['detail'], c"
+
+  cleanroom:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Clean room passes on a good app
+        working-directory: tests/fixtures/cleanroom-app
+        run: python3 "$GITHUB_WORKSPACE/skills/prodready/scripts/cleanroom.py" --port 18080 --smoke /
+
+      - name: Clean room catches a file that is not in git
+        working-directory: tests/fixtures/cleanroom-app
+        run: |
+          git config user.email ci@example.com && git config user.name ci
+          echo "local only" > notes.txt
+          sed -i 's|^COPY server.js ./|COPY server.js notes.txt ./|' Dockerfile
+          git commit -qam "Dockerfile copies an untracked file"
+          if python3 "$GITHUB_WORKSPACE/skills/prodready/scripts/cleanroom.py" --port 18080; then
+            echo "expected the clean room to fail" && exit 1
+          fi
+          python3 -c "import json; s=[x for x in json.load(open('.prodready/verify.json'))['latest']['steps'] if x['step']=='build'][0]; assert not s['ok'] and 'notes.txt' in s['detail'], s"
+
+  migrations:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Migrations apply, re-run, roll back, and the backup restores
+        working-directory: tests/fixtures/migrate-app
+        run: |
+          python3 "$GITHUB_WORKSPACE/skills/prodready/scripts/cleanroom.py" --port 18081 \
+            --migrate "run --rm migrate up" --rollback "run --rm migrate down" --backup-check
+          python3 - <<'PY'
+          import json
+          steps = {s["step"]: s for s in json.load(open(".prodready/verify.json"))["latest"]["steps"]}
+          for name in ("migrations apply to an empty database", "running migrations again is a no-op",
+                       "rollback of the last migration", "migrate again after rollback",
+                       "backup restores with the same row counts"):
+              assert steps[name]["ok"], steps[name]
+          assert "tables=4 rows=5" in steps["backup restores with the same row counts"]["detail"], steps
+          print("database proofs ok")
+          PY
+
+      - name: Clean room fails on a broken migration
+        working-directory: tests/fixtures/migrate-app
+        run: |
+          git config user.email ci@example.com && git config user.name ci
+          printf 'ALTER TABLE ordrs ADD COLUMN x int;\n' > migrations/004_typo.up.sql
+          git add migrations && git commit -qm "broken migration"
+          if python3 "$GITHUB_WORKSPACE/skills/prodready/scripts/cleanroom.py" --port 18081 --migrate "run --rm migrate up"; then
+            echo "expected the clean room to fail" && exit 1
+          fi
+          python3 -c "import json; s=[x for x in json.load(open('.prodready/verify.json'))['latest']['steps'] if x['step'].startswith('migrations apply')][0]; assert not s['ok'] and 'ordrs' in s['detail'], s"

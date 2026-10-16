@@ -1,0 +1,45 @@
+name: Wrong or missed finding
+description: prodready reported something that isn't a problem, or missed something that is.
+labels: [accuracy]
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What happened
+      options:
+        - False positive (reported, but not a real problem)
+        - False negative (a real problem it missed)
+        - Wrong severity
+    validations:
+      required: true
+  - type: input
+    id: check
+    attributes:
+      label: Check ID
+      placeholder: AC-01
+  - type: input
+    id: stack
+    attributes:
+      label: Stack
+      placeholder: Next.js 15, Prisma, Postgres
+    validations:
+      required: true
+  - type: textarea
+    id: code
+    attributes:
+      label: Minimal code
+      description: The smallest snippet that shows the problem. Remove secrets and anything private.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why it's wrong
+    validations:
+      required: true
+  - type: input
+    id: agent
+    attributes:
+      label: Agent and model
+      placeholder: Claude Code 2.x, Opus 5.5

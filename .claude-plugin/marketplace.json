@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "prodready",
+  "owner": {
+    "name": "human-stuff",
+    "url": "https://github.com/human-stuff"
+  },
+  "description": "Install prodready as a Claude Code plugin.",
+  "plugins": [
+    {
+      "name": "prodready",
+      "source": "./",
+      "description": "Localhost to production, proven at every step: env capture, container pack, clean-room verify, tested deploy manual, deploy, live checks, plus a 13-area readiness check.",
+      "version": "1.0.0",
+      "license": "MIT",
+      "keywords": [
+        "deployment",
+        "production-readiness",
+        "docker",
+        "devops",
+        "deploy",
+        "containerize"
+      ]
+    }
+  ]
+}

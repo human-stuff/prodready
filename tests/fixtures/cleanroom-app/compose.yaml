@@ -1,0 +1,16 @@
+services:
+  app:
+    build: .
+    env_file: .env
+    ports:
+      - "${APP_PORT:-18080}:3000"
+    depends_on:
+      cache:
+        condition: service_healthy
+    restart: unless-stopped
+  cache:
+    image: redis:7.4-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      retries: 10

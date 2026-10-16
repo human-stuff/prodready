@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "prodready",
+  "description": "Takes a project from localhost to production and proves each step: finds hidden local dependencies, packs it into a container, boots it from a fresh copy of the code, writes a deploy manual tested by an agent with no context, deploys to servers or platforms, and checks the live URL. Includes a 13-area production-readiness check with parallel auditors, and a fix mode.",
+  "version": "1.0.0",
+  "author": {
+    "name": "human-stuff",
+    "url": "https://github.com/human-stuff"
+  },
+  "homepage": "https://github.com/human-stuff/prodready",
+  "repository": "https://github.com/human-stuff/prodready",
+  "license": "MIT",
+  "keywords": [
+    "deployment",
+    "production-readiness",
+    "docker",
+    "devops",
+    "deploy",
+    "containerize",
+    "security-audit",
+    "owasp",
+    "ci-cd",
+    "agent-skills"
+  ],
+  "skills": [
+    "./skills/prodready"
+  ]
+}

@@ -1,0 +1,44 @@
+services:
+  app:
+    build: .
+    env_file: .env
+    ports:
+      - "${APP_PORT:-18081}:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_DB: app
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d app"]
+      interval: 3s
+      retries: 20
+
+  # One-off migration runner: docker compose run --rm migrate [up|down]
+  migrate:
+    image: postgres:17-alpine
+    profiles: ["tools"]
+    entrypoint: ["sh", "/migrate.sh"]
+    command: ["up"]
+    environment:
+      PGHOST: db
+      PGUSER: app
+      PGDATABASE: app
+      PGPASSWORD: ${DB_PASSWORD}
+    volumes:
+      - ./migrations:/migrations:ro
+      - ./migrate.sh:/migrate.sh:ro
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  dbdata:
