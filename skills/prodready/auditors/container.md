@@ -10,7 +10,7 @@ How the app is packaged and configured to run. If the app is a library or a CLI 
 
 | ID | Check | Fails when |
 |---|---|---|
-| CT-01 | Container definition | A deployable service with no Dockerfile or any other reproducible build (buildpack, Nixpacks or platform config). `medium`. Point to `/prodready export` |
+| CT-01 | Container definition | A deployable service with no Dockerfile or any other reproducible build (buildpack, Nixpacks or platform config). `medium`. Point to `/prodready pack` |
 | CT-02 | Runs as root | No `USER` instruction, or `USER root` in the final stage |
 | CT-03 | Base image | `FROM x:latest`, no tag, a base image whose runtime is past end of life, or a full OS image where a `-slim`, `-alpine` or distroless one would do. Digest pinning is a `low` suggestion |
 | CT-04 | Build stages | Compilers, dev dependencies, source maps or test files in the final image. No multi-stage build where it would help |

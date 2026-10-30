@@ -8,7 +8,7 @@ Look for `DEPLOY.md`, `DEPLOY.prodready.md`, `docs/DEPLOY.md` and `docs/deploy*.
 
 - A first line of `<!-- prodready:deploy v1 -->` means a prodready manual, with Requirements, Configuration, Steps and **Expected** lines.
 - If it is a manual written by a person, follow it, but confirm each command first, because there is nothing to check output against.
-- If there is no manual, say so and offer `/prodready export` (or `ship`). Don't make up deploy steps.
+- If there is no manual, say so and offer `/prodready export` (pack, verify and handoff in one go) or `ship`. Don't make up deploy steps.
 
 Pick the target in this order: the command's `--host` or `--target`, then `prodready.yml` `deploy:`, then the manual's own target. With none of those, the target is this machine.
 
